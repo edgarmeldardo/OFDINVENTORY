@@ -263,33 +263,41 @@ if archivo:
             use_container_width=True
         )
 
+        # -----------------------------
+    # GUIAS CON 5 DIAS O MAS
     # -----------------------------
-    # TOP 10
-    # -----------------------------
-    st.subheader("🚨 Top 10 Casos Más Urgentes")
+    st.subheader("🚨 Guías con 5 días o más en estación")
 
-    columnas = [
+    guias_criticas = (
+        df[df["Aging"] >= 5]
+        .sort_values(
+            by="Aging",
+            ascending=False
+        )
+    )
+
+    columnas_guias = [
         "Waybill Number",
         "DA",
         "Aging",
         "OFD Attempts",
-        "Problem Type",
-        "Priority",
-        "Priority Score"
+        "Consignee Address",
+        "Problem Type"
     ]
 
-    columnas = [c for c in columnas if c in df.columns]
+    columnas_guias = [
+        columna
+        for columna in columnas_guias
+        if columna in df.columns
+    ]
 
-    top10 = (
-        df.sort_values(
-            "Priority Score",
-            ascending=False
-        )
-        .head(10)
+    st.metric(
+        "🔴 Total Guías +5 Días",
+        len(guias_criticas)
     )
 
     st.dataframe(
-        top10[columnas],
+        guias_criticas[columnas_guias],
         use_container_width=True
     )
 
@@ -314,34 +322,35 @@ if archivo:
         file_name="OFD_Filtrado.xlsx"
     )
 
-# -----------------------------
-# INVENTARIO COMPLETO
-# -----------------------------
-st.subheader("Inventario Completo")
+    # -----------------------------
+    # INVENTARIO COMPLETO
+    # -----------------------------
+    st.subheader("Inventario Completo")
 
-columnas_inventario = [
-    "Aging",
-    "OFD Time",
-    "Waybill Number",
-    "DA",
-    "Consignee Address",
-    "Problem Type"
-]
+    columnas_inventario = [
+        "Aging",
+        "OFD Time",
+        "Waybill Number",
+        "DA",
+        "Consignee Address",
+        "Problem Type"
+    ]
 
-columnas_existentes = []
+    columnas_inventario = [
+        columna
+        for columna in columnas_inventario
+        if columna in df.columns
+    ]
 
-for columna in columnas_inventario:
-    if columna in df.columns:
-        columnas_existentes.append(columna)
+    inventario_view = (
+        df[columnas_inventario]
+        .sort_values(
+            by="Aging",
+            ascending=False
+        )
+    )
 
-inventario_view = df[columnas_existentes]
-
-inventario_view = inventario_view.sort_values(
-    by="Aging",
-    ascending=False
-)
-
-st.dataframe(
-    inventario_view,
-    use_container_width=True
-)
+    st.dataframe(
+        inventario_view,
+        use_container_width=True
+    )
