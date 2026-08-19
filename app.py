@@ -315,11 +315,29 @@ if archivo:
     )
 
     # -----------------------------
-    # TABLA COMPLETA
-    # -----------------------------
-    st.subheader("Inventario Completo")
+# ----------------
+st.subheader("Inventario Completo")
 
-    st.dataframe(
-        df,
-        use_container_width=True
-    )
+columnas_inventario = [
+    "Aging",
+    "OFD Time",
+    "Waybill Number",
+    "DA",
+    "Consignee Address",
+    "Problem Type"
+]
+
+columnas_inventario = [
+    c for c in columnas_inventario
+    if c in df.columns
+]
+
+inventario_view = df[columnas_inventario]
+
+st.dataframe(
+    inventario_view.sort_values(
+        by="Aging",
+        ascending=False
+    ),
+    use_container_width=True
+)
