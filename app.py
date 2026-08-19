@@ -314,8 +314,9 @@ if archivo:
         file_name="OFD_Filtrado.xlsx"
     )
 
-    # -----------------------------
-# ----------------
+# -----------------------------
+# INVENTARIO COMPLETO
+# -----------------------------
 st.subheader("Inventario Completo")
 
 columnas_inventario = [
@@ -327,17 +328,20 @@ columnas_inventario = [
     "Problem Type"
 ]
 
-columnas_inventario = [
-    c for c in columnas_inventario
-    if c in df.columns
-]
+columnas_existentes = []
 
-inventario_view = df[columnas_inventario]
+for columna in columnas_inventario:
+    if columna in df.columns:
+        columnas_existentes.append(columna)
+
+inventario_view = df[columnas_existentes]
+
+inventario_view = inventario_view.sort_values(
+    by="Aging",
+    ascending=False
+)
 
 st.dataframe(
-    inventario_view.sort_values(
-        by="Aging",
-        ascending=False
-    ),
+    inventario_view,
     use_container_width=True
 )
