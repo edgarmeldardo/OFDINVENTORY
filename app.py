@@ -264,42 +264,36 @@ if archivo:
         )
 
         # -----------------------------
-    # GUIAS CON 5 DIAS O MAS
-    # -----------------------------
-    st.subheader("🚨 Guías con 5 días o más en estación")
+# TOP 5 GUIAS MAS ANTIGUAS
+# -----------------------------
+st.subheader("🚨 Top 5 Guías con Mayor Aging")
 
-    guias_criticas = (
-        df[df["Aging"] >= 5]
-        .sort_values(
-            by="Aging",
-            ascending=False
-        )
+top5 = (
+    df[df["Aging"] >= 5]
+    .sort_values(
+        by="Aging",
+        ascending=False
     )
+    .head(5)
+)
 
-    columnas_guias = [
-        "Waybill Number",
-        "DA",
-        "Aging",
-        "OFD Attempts",
-        "Consignee Address",
-        "Problem Type"
-    ]
+columnas_top5 = [
+    "Waybill Number",
+    "Aging",
+    "DA",
+    "Consignee Address",
+    "Problem Type"
+]
 
-    columnas_guias = [
-        columna
-        for columna in columnas_guias
-        if columna in df.columns
-    ]
+columnas_top5 = [
+    c for c in columnas_top5
+    if c in df.columns
+]
 
-    st.metric(
-        "🔴 Total Guías +5 Días",
-        len(guias_criticas)
-    )
-
-    st.dataframe(
-        guias_criticas[columnas_guias],
-        use_container_width=True
-    )
+st.dataframe(
+    top5[columnas_top5],
+    use_container_width=True
+)
 
     # -----------------------------
     # EXPORTAR
