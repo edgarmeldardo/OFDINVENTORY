@@ -54,12 +54,33 @@ if f:
     with a:
         st.plotly_chart(px.pie(df,names='Priority',title='Prioridades'),use_container_width=True)
     with b:
-        ag=df.groupby(pd.cut(df['Aging'],[-1,2,4,7,999])).size().reset_index(name='Total')
-        st.plotly_chart(px.bar(ag,x='Aging',y='Total',title='Aging'),use_container_width=True)
+        df["Rango Aging"] = pd.cut(
+    df["Aging"],
+    bins=[-1, 2, 4, 7, 999],
+    labels=["0-2 días", "3-4 días", "5-7 días", "8+ días"]
+)
 
-    st.subheader('🚨 Top 10 Casos')
-    top=df.sort_values('Priority Score',ascending=False).head(10)
-    st.dataframe(top,use_container_width=True)
+ag = (
+    df["Rango Aging"]
+    .value_counts()
+    .sort_index()
+    .reset_index()
+)
+
+ag.columns = ["Rango", "Total"]
+
+fig = px.bar(
+    ag,
+    x="Rango",
+    y="Total",
+    color="Total",
+    title="Distribución Aging"
+)
+
+st.plotly_chart(
+    fig,
+    use_container_width=True
+)
 
     output=BytesIO()
     with pd.ExcelWriter(output,engine='openpyxl') as writer:
