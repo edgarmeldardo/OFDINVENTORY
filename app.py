@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from io import BytesIO
+import matplotlib.pyplot as plt
 
 # -----------------------------
 #-----------
@@ -315,6 +316,43 @@ st.dataframe(
         data=output.getvalue(),
         file_name="OFD_Filtrado.xlsx"
     )
+
+    # -----------------------------
+# EXPORTAR TOP 5 A PNG
+# -----------------------------
+fig, ax = plt.subplots(figsize=(12, 3))
+
+ax.axis('off')
+
+tabla = ax.table(
+    cellText=top5[columnas_top5].values,
+    colLabels=columnas_top5,
+    loc='center'
+)
+
+tabla.auto_set_font_size(False)
+tabla.set_fontsize(8)
+tabla.scale(1.2, 1.8)
+
+png_file = BytesIO()
+
+plt.savefig(
+    png_file,
+    format="png",
+    bbox_inches="tight"
+)
+
+png_file.seek(0)
+
+st.download_button(
+    label="📸 Descargar Top 5 como PNG",
+    data=png_file,
+    file_name="Top5_Guias_Criticas.png",
+    mime="image/png"
+)
+
+plt.close()
+``
 
     # -----------------------------
     # INVENTARIO COMPLETO
