@@ -3,89 +3,323 @@ import pandas as pd
 import plotly.express as px
 from io import BytesIO
 
-st.set_page_config(page_title='OFD Control Tower',page_icon='📦',layout='wide')
+# -----------------------------
+#-----------
+st.set_page_config(
+    page_title="OFD Control Tower",
+    page_icon="📦",
+    layout="wide"
+)
 
 st.markdown("""
 <style>
-.stApp {background-color:#0e1117;color:white;}
+.stApp {
+    background-color: #0E1117;
+}
 </style>
 """, unsafe_allow_html=True)
 
-st.title('📦 OFD Control Tower')
-st.caption('Dashboard ejecutivo logístico')
+st.title("📦 OFD Control Tower")
+st.caption("Dashboard Ejecutivo Logístico")
 
-f=st.file_uploader('Carga archivo OFD',type=['xls','xlsx'])
-if f:
-    df=pd.read_excel(f)
-    df['LM Receive Date']=pd.to_datetime(df.get('LM Receive Date'),errors='coerce')
-    df['Aging']=(pd.Timestamp.today()-df['LM Receive Date']).dt.days
+# -----------------------------
+# CARGA DE ARCHIVO
+# -----------------------------
+archivo = st.file_uploader(
+    "Carga archivo OFD",
+    type=["xls", "xlsx"]
+)
 
-    def score(r):
-        s=0
-        if pd.notna(r['Aging']) and r['Aging']>=5:s+=50
-        if pd.notna(r.get('OFD Attempts')) and r.get('OFD Attempts',0)>=2:s+=20
-        if pd.notna(r.get('Problem Type')):s+=20
-        if str(r.get('Main Stage'))=='Report Suspected Loss':s+=100
-        return s
+if archivo:
 
-    df['Priority Score']=df.apply(score,axis=1)
-    df['Priority']=df['Priority Score'].apply(lambda x:'Crítico' if x>=100 else 'Alto' if x>=60 else 'Medio' if x>=30 else 'Normal')
+    df = pd.read_excel(archivo)
 
-    da=st.sidebar.multiselect('Driver',sorted(df['DA'].dropna().unique()))
-    if da: df=df[df['DA'].isin(da)]
+    # -----------------------------
+    # FECHAS
+    # -----------------------------
+    df["LM Receive Date"] = pd.to_datetime(
+        df["LM Receive Date"],
+        errors="coerce"
+    )
 
-    c1,c2,c3,c4,c5=st.columns(5)
-    c1.metric('Inventario',len(df))
-    c2.metric('Críticos',len(df[df.Priority=='Crítico']))
-    c3.metric('Problemas',df['Problem Type'].notna().sum())
-    c4.metric('Aging',round(df['Aging'].mean(),1))
-    c5.metric('Drivers',df['DA'].nunique())
+    hoy = pd.Timestamp.today()
 
-    a,b=st.columns(2)
-    with a:
-        p=df['Problem Type'].fillna('Sin problema').value_counts().reset_index()
-        p.columns=['Problema','Total']
-        st.plotly_chart(px.bar(p,x='Problema',y='Total',title='Problemas por Tipo'),use_container_width=True)
-    with b:
-        d=df.groupby('DA').size().reset_index(name='Total').sort_values('Total',ascending=False)
-        st.plotly_chart(px.bar(d,x='DA',y='Total',title='Ranking DA'),use_container_width=True)
+    df["Aging"] = (
+        hoy - df["LM Receive Date"]
+    ).dt.days
 
-    a,b=st.columns(2)
-    with a:
-        st.plotly_chart(px.pie(df,names='Priority',title='Prioridades'),use_container_width=True)
-    with b:
+    # -----------------------------
+    # PRIORIDAD
+    # -----------------------------
+    def calcular_score(row):
+
+        score = 0
+
+        if pd.notna(row["Aging"]) and row["Aging"] >= 5:
+            score += 50
+
+        if pd.notna(row.get("OFD Attempts")) and row["OFD Attempts"] >= 2:
+            score += 20
+
+        if pd.notna(row.get("Problem Type")):
+            score += 20
+
+        if str(row.get("Main Stage")) == "Report Suspected Loss":
+            score += 100
+
+        return score
+
+    df["Priority Score"] = df.apply(
+        calcular_score,
+        axis=1
+    )
+
+    def prioridad(score):
+
+        if score >= 100:
+            return "Crítico"
+
+        elif score >= 60:
+            return "Alto"
+
+        elif score >= 30:
+            return "Medio"
+
+        return "Normal"
+
+    df["Priority"] = df["Priority Score"].apply(
+        prioridad
+    )
+
+    # -----------------------------
+    # FILTROS
+    # -----------------------------
+    st.sidebar.header("Filtros")
+
+    drivers = st.sidebar.multiselect(
+        "Driver",
+        sorted(df["DA"].dropna().unique())
+    )
+
+    if drivers:
+        df = df[df["DA"].isin(drivers)]
+
+    # -----------------------------
+    # KPIs
+    # -----------------------------
+    c1, c2, c3, c4, c5 = st.columns(5)
+
+    c1.metric(
+        "📦 Inventario",
+        len(df)
+    )
+
+    c2.metric(
+        "🔴 Críticos",
+        len(df[df["Priority"] == "Crítico"])
+    )
+
+    c3.metric(
+        "⚠ Problemas",
+        df["Problem Type"].notna().sum()
+    )
+
+    c4.metric(
+        "📅 Aging",
+        round(df["Aging"].mean(), 1)
+    )
+
+    c5.metric(
+        "👤 Drivers",
+        df["DA"].nunique()
+    )
+
+    # -----------------------------
+    # GRÁFICOS SUPERIORES
+    # -----------------------------
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        st.subheader("Problemas por Tipo")
+
+        problemas = (
+            df["Problem Type"]
+            .fillna("Sin problema")
+            .value_counts()
+            .reset_index()
+        )
+
+        problemas.columns = [
+            "Problema",
+            "Total"
+        ]
+
+        fig1 = px.bar(
+            problemas,
+            x="Problema",
+            y="Total",
+            color="Total"
+        )
+
+        st.plotly_chart(
+            fig1,
+            use_container_width=True
+        )
+
+    with col2:
+
+        st.subheader("Ranking Driver")
+
+        ranking = (
+            df.groupby("DA")
+            .size()
+            .reset_index(name="Total")
+            .sort_values(
+                "Total",
+                ascending=False
+            )
+        )
+
+        fig2 = px.bar(
+            ranking,
+            x="DA",
+            y="Total",
+            color="Total"
+        )
+
+        st.plotly_chart(
+            fig2,
+            use_container_width=True
+        )
+
+    # -----------------------------
+    # GRÁFICOS INFERIORES
+    # -----------------------------
+    col3, col4 = st.columns(2)
+
+    with col3:
+
+        st.subheader("Distribución de Prioridad")
+
+        prioridad_df = (
+            df["Priority"]
+            .value_counts()
+            .reset_index()
+        )
+
+        prioridad_df.columns = [
+            "Prioridad",
+            "Total"
+        ]
+
+        fig3 = px.pie(
+            prioridad_df,
+            names="Prioridad",
+            values="Total"
+        )
+
+        st.plotly_chart(
+            fig3,
+            use_container_width=True
+        )
+
+    with col4:
+
+        st.subheader("Distribución Aging")
+
         df["Rango Aging"] = pd.cut(
-    df["Aging"],
-    bins=[-1, 2, 4, 7, 999],
-    labels=["0-2 días", "3-4 días", "5-7 días", "8+ días"]
-)
+            df["Aging"],
+            bins=[-1, 2, 4, 7, 999],
+            labels=[
+                "0-2 días",
+                "3-4 días",
+                "5-7 días",
+                "8+ días"
+            ]
+        )
 
-ag = (
-    df["Rango Aging"]
-    .value_counts()
-    .sort_index()
-    .reset_index()
-)
+        aging_df = (
+            df["Rango Aging"]
+            .value_counts()
+            .sort_index()
+            .reset_index()
+        )
 
-ag.columns = ["Rango", "Total"]
+        aging_df.columns = [
+            "Rango",
+            "Total"
+        ]
 
-fig = px.bar(
-    ag,
-    x="Rango",
-    y="Total",
-    color="Total",
-    title="Distribución Aging"
-)
+        fig4 = px.bar(
+            aging_df,
+            x="Rango",
+            y="Total",
+            color="Total"
+        )
 
-st.plotly_chart(
-    fig,
-    use_container_width=True
-)
+        st.plotly_chart(
+            fig4,
+            use_container_width=True
+        )
 
-    output=BytesIO()
-    with pd.ExcelWriter(output,engine='openpyxl') as writer:
-        df.to_excel(writer,index=False)
+    # -----------------------------
+    # TOP 10
+    # -----------------------------
+    st.subheader("🚨 Top 10 Casos Más Urgentes")
 
-    st.download_button('⬇ Exportar Excel Filtrado',output.getvalue(),'OFD_filtrado.xlsx')
+    columnas = [
+        "Waybill Number",
+        "DA",
+        "Aging",
+        "OFD Attempts",
+        "Problem Type",
+        "Priority",
+        "Priority Score"
+    ]
 
-    st.dataframe(df,use_container_width=True)
+    columnas = [c for c in columnas if c in df.columns]
+
+    top10 = (
+        df.sort_values(
+            "Priority Score",
+            ascending=False
+        )
+        .head(10)
+    )
+
+    st.dataframe(
+        top10[columnas],
+        use_container_width=True
+    )
+
+    # -----------------------------
+    # EXPORTAR
+    # -----------------------------
+    output = BytesIO()
+
+    with pd.ExcelWriter(
+        output,
+        engine="openpyxl"
+    ) as writer:
+
+        df.to_excel(
+            writer,
+            index=False
+        )
+
+    st.download_button(
+        "⬇ Exportar Excel Filtrado",
+        data=output.getvalue(),
+        file_name="OFD_Filtrado.xlsx"
+    )
+
+    # -----------------------------
+    # TABLA COMPLETA
+    # -----------------------------
+    st.subheader("Inventario Completo")
+
+    st.dataframe(
+        df,
+        use_container_width=True
+    )
