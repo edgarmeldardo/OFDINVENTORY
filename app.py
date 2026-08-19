@@ -299,7 +299,7 @@ st.dataframe(
     # -----------------------------
     # EXPORTAR
     # -----------------------------
-    output = BytesIO()
+output = BytesIO()
 
     with pd.ExcelWriter(
         output,
